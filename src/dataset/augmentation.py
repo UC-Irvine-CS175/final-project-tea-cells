@@ -56,6 +56,22 @@ class ResizeBPS(object):
         """
         img_resized = cv2.resize(img, (self.resize_width, self.resize_height))
         return img_resized
+    
+class ConvertToRGB(object):
+    """convert greyscale to rgb image"""
+    def __call__(self, image: np.ndarray) -> np.ndarray:
+        """
+        Convert the image to three channels
+
+        args:
+            img (np.ndarray): image to be converted to three channels.
+        returns:
+            torch.Tensor: image with three channels.
+        """
+        img_three_channels = np.repeat(image[..., np.newaxis], 3, -1)
+        return img_three_channels
+
+
 
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
@@ -121,6 +137,72 @@ def main():
     
     # plt.imshow(test_zoom_resize)
     # plt.savefig('augmentations_after_zoom_resize.png')
+
+class VFlipBPS(object):
+    def __call__(self, image) -> np.ndarray:
+        """
+        Flip the image vertically
+        """
+        return np.flipud(image)
+        #raise NotImplementedError
+
+
+class HFlipBPS(object):
+    def __call__(self, image) -> np.ndarray:
+        """
+        Flip the image horizontally
+        """
+        return np.fliplr(image)
+        #raise NotImplementedError
+
+
+class RotateBPS(object):
+    def __init__(self, rotate: int) -> None:
+        self.rotate = rotate
+
+    def __call__(self, image) -> Any:
+        '''
+        Initialize an object of the Augmentation class
+        Parameters:
+            rotate (int):
+                Optional parameter to specify a 90, 180, or 270 degrees of rotation.
+        Returns:
+            np.ndarray
+        '''
+        return np.rot90(image, self.rotate // 90)
+        #raise NotImplementedError
+
+
+class RandomCropBPS(object):
+    """Crop randomly the image in a sample.
+
+    Args:
+        output_size (tuple or int): Desired output size. If int, square crop
+        is made.
+    """
+
+    def __init__(self, output_height: int, output_width: int):
+        if isinstance(output_height, int):
+            self.output_size = (output_height, output_width)
+        else:
+            self.output_size = output_height, output_width
+
+    def __call__(self, image):
+        h, w = image.shape[:2]
+        new_h, new_w = self.output_size
+
+        top = np.random.randint(0, h - new_h)
+        left = np.random.randint(0, w - new_w)
+
+        if isinstance(image, np.ndarray):
+            return image[top: top + new_h, left: left + new_w]
+        elif isinstance(image, torch.Tensor):
+            return torchvision.transforms.functional.crop(image, top, left, new_h, new_w)
+        else:
+            raise TypeError("Unsupported image type. Must be either a numpy array or a torch tensor.")
+        
+        #raise NotImplementedError
+        
 
 if __name__ == "__main__":
     main()
